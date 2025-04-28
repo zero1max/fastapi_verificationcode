@@ -7,3 +7,11 @@ request_phone_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=True
 )
+
+login_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Login")]
+    ],
+    resize_keyboard=True,
+    one_time_keyboard=True
+)

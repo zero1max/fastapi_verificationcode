@@ -5,13 +5,11 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import httpx
 import logging
-#
-from .keyboards import request_phone_keyboard
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from .keyboards import request_phone_keyboard, login_keyboard
 
 router = Router()
 
@@ -19,11 +17,53 @@ class UserState(StatesGroup):
     phone = State()
     code = State()
 
+async def user_already_exists(user_id: int) -> bool:
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info(f"Checking if user {user_id} exists")
+            response = await client.get(f"http://localhost:8000/check_user?telegram_id={user_id}")
+            logger.info(f"Received response from /check_user: status={response.status_code}, body={response.json()}")
+            if response.status_code == 200:
+                return response.json().get("is_verified", False)
+            return False
+    except Exception as e:
+        logger.error(f"Error checking user {user_id}: {str(e)}")
+        return False
+
 @router.message(CommandStart())
 async def start_handler(msg: Message, state: FSMContext):
-    logger.info(f"Received /start command from user {msg.from_user.id}")
-    await msg.answer("Telefon raqamingizni kiriting (masalan, +998901234567):", reply_markup=request_phone_keyboard)
-    await state.set_state(UserState.phone)
+    user_id = msg.from_user.id
+    logger.info(f"Received /start command from user {user_id}")
+
+    if await user_already_exists(user_id):
+        await msg.answer("Siz allaqachon ro'yxatdan o'tgansiz. Kod olish uchun 'Login' tugmasini bosing:", reply_markup=login_keyboard)
+    else:
+        await msg.answer("Telefon raqamingizni kiriting (masalan, +998901234567):", reply_markup=request_phone_keyboard)
+        await state.set_state(UserState.phone)
+
+@router.message(F.text == "Login")
+async def handle_login(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    logger.info(f"User {user_id} clicked Login button")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            logger.info(f"Sending POST request to /register for user {user_id} (login)")
+            response = await client.post(
+                "http://localhost:8000/register",
+                json={"telegram_id": user_id, "phone_number": None}
+            )
+            logger.info(f"Received response from /register: status={response.status_code}, body={response.json()}")
+
+            if response.status_code == 200:
+                await message.answer("Yangi tasdiqlash kodi yuborildi. Iltimos, 6 raqamli kodni kiriting (masalan, 123456).")
+                await state.set_state(UserState.code)
+            else:
+                error_detail = response.json().get('detail', 'Unknown error')
+                await message.answer(f"Xatolik: {error_detail}")
+    except Exception as e:
+        logger.error(f"Error during login for user {user_id}: {str(e)}")
+        await message.answer(f"Xatolik yuz berdi: {str(e)}")
 
 @router.message(UserState.phone, F.contact)
 async def handle_phone_contact(message: Message, state: FSMContext):
@@ -31,7 +71,6 @@ async def handle_phone_contact(message: Message, state: FSMContext):
     phone_number = message.contact.phone_number
     logger.info(f"Received phone number via contact from user {user_id}: {phone_number}")
 
-    # iOS ba'zida raqamni +998 bilan emas, 998 bilan yuboradi, to‘g‘rilaymiz:
     if not phone_number.startswith('+'):
         phone_number = '+' + phone_number
 

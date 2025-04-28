@@ -10,20 +10,19 @@ async def create_user(db: AsyncSession, telegram_id: int, phone_number: str):
     result = await db.execute(select(User).filter(User.telegram_id == telegram_id))
     existing_user = result.scalars().first()
     if existing_user:
-        if existing_user.is_verified:
-            raise HTTPException(status_code=400, detail="User already verified")
-        else:
-            while True:
-                code, expires_at = generate_verification_code()
-                code_result = await db.execute(select(User).filter(User.verification_code == code))
-                if not code_result.scalars().first():
-                    break
-            existing_user.phone_number = phone_number
-            existing_user.verification_code = code
-            existing_user.expires_at = expires_at
-            await db.commit()
-            await db.refresh(existing_user)
-            return existing_user
+        # For login flow: even if user is verified, generate a new code
+        while True:
+            code, expires_at = generate_verification_code()
+            code_result = await db.execute(select(User).filter(User.verification_code == code))
+            if not code_result.scalars().first():
+                break
+        existing_user.phone_number = phone_number if phone_number else existing_user.phone_number
+        existing_user.verification_code = code
+        existing_user.expires_at = expires_at
+        # Do not change is_verified status
+        await db.commit()
+        await db.refresh(existing_user)
+        return existing_user
 
     # Create new user with unique verification code
     while True:
@@ -49,8 +48,6 @@ async def verify_user(db: AsyncSession, code: str):
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="Invalid code")
-    if user.is_verified:
-        raise HTTPException(status_code=400, detail="User already verified")
     if user.expires_at < datetime.utcnow():
         raise HTTPException(status_code=400, detail="Expired code")
     

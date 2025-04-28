@@ -3,7 +3,6 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     DB_URL: str
-    ALGORITHM: str
     CODE_TOKEN_EXPIRE_MINUTES: int
     BOT_TOKEN: str
 
