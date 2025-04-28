@@ -1,90 +1,107 @@
-# 🚀 FastAPI Telegram Verification Bot
+# FastAPI Verification Code System
 
-A modern **FastAPI** and **aiogram 3.x** project for user registration and verification via a **Telegram bot**.  
-Users register by sharing their phone number, receive a 6-digit code, and verify by sending the code.  
-Powered by **PostgreSQL** and **async SQLAlchemy**.
+A FastAPI-based verification system that integrates with Telegram for user authentication and verification.
 
----
+## Features
 
-## ✨ Features
+- User registration with phone number
+- Telegram bot integration for verification code delivery
+- Secure verification code generation and validation
+- Async database operations using SQLAlchemy
+- RESTful API endpoints for user management
 
-- 📱 Register users via Telegram with phone number  
-- 🔒 Send and verify 6-digit codes  
-- 🗄️ Store user data in PostgreSQL  
-- ⚡ Async FastAPI with aiogram 3.x integration  
+## Tech Stack
 
----
+- FastAPI - Web framework
+- SQLAlchemy - Database ORM
+- aiogram - Telegram bot framework
+- asyncpg - Async PostgreSQL driver
+- Pydantic - Data validation
+- Python-dotenv - Environment variable management
 
-## ✅ Prerequisites
+## Prerequisites
 
-- Python 3.11+
-- PostgreSQL
-- Telegram Bot Token (from [@BotFather](https://t.me/BotFather))
+- Python 3.8+
+- PostgreSQL database
+- Telegram Bot Token (from BotFather)
 
----
+## Installation
 
-## ⚙️ Setup
-
-### 1. Clone the Repository
-
+1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/your-repo-name.git
-cd your-repo-name
+git clone <repository-url>
+cd fastapi_verificationcode
+```
 
-### 2. Install Dependencies
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
 
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
+```
 
-### 3. Set Up PostgreSQL
-
-Create a database named exam:
-
+4. Create a `.env` file based on `.env.dist`:
 ```bash
-psql -U postgres
-CREATE DATABASE exam;
+cp .env.dist .env
+```
 
-## 🚀 Running the App
-Run the FastAPI Server
+5. Configure your environment variables in `.env`:
+```
+DB_URL=postgresql+asyncpg://user:password@localhost:5432/dbname
+CODE_TOKEN_EXPIRE_MINUTES=15
+BOT_TOKEN=your_telegram_bot_token
+```
 
+## Project Structure
+
+```
+.
+├── main.py              # FastAPI application and routes
+├── crud.py              # Database operations
+├── models.py            # SQLAlchemy models
+├── schemas.py           # Pydantic models
+├── database.py          # Database configuration
+├── config.py            # Application configuration
+├── tg_bot/              # Telegram bot implementation
+├── utils/               # Utility functions
+└── requirements.txt     # Project dependencies
+```
+
+## API Endpoints
+
+- `POST /register` - Register a new user and send verification code
+- `POST /verify` - Verify user with the received code
+- `GET /check_user` - Check if a user is verified
+
+## Usage
+
+1. Start the FastAPI server:
 ```bash
 uvicorn main:app --reload
+```
 
-Run the Telegram Bot
+2. The server will be available at `http://localhost:8000`
 
-In a separate terminal:
+3. Use the Telegram bot to interact with the verification system
 
-```bash
-python -m telegram_bot.bot
+## API Documentation
 
-## 💬 Usage
+Once the server is running, you can access:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
 
-    Start the bot on Telegram with /start.
+## Contributing
 
-    Share your phone number (e.g., +998901234567).
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
 
-    Receive a 6-digit verification code.
+## License
 
-    Send the code to verify (e.g., 123456).
-
-## 🗂 Project Structure
-.
-├── main.py                # FastAPI application with /register and /verify endpoints
-├── telegram_bot/
-│   ├── bot.py             # Bot entrypoint
-│   ├── handlers.py        # Handlers for bot messages and actions
-│   └── keyboards.py       # Custom keyboards (e.g., for contact request)
-├── crud.py                # Database operations
-├── database.py            # Async SQLAlchemy setup
-├── models.py              # User model
-├── schemas.py             # Pydantic schemas
-└── utils/                 # Code generation utility
-
-📄 License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-🤝 Contributing
-
-Contributions, issues, and feature requests are welcome!
-Feel free to open issues or submit pull requests.
+This project is licensed under the MIT License - see the LICENSE file for details.
