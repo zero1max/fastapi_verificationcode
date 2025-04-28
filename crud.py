@@ -6,11 +6,9 @@ from fastapi import HTTPException
 from datetime import datetime
 
 async def create_user(db: AsyncSession, telegram_id: int, phone_number: str):
-    # Check for existing user
     result = await db.execute(select(User).filter(User.telegram_id == telegram_id))
     existing_user = result.scalars().first()
     if existing_user:
-        # For login flow: even if user is verified, generate a new code
         while True:
             code, expires_at = generate_verification_code()
             code_result = await db.execute(select(User).filter(User.verification_code == code))
@@ -19,12 +17,10 @@ async def create_user(db: AsyncSession, telegram_id: int, phone_number: str):
         existing_user.phone_number = phone_number if phone_number else existing_user.phone_number
         existing_user.verification_code = code
         existing_user.expires_at = expires_at
-        # Do not change is_verified status
         await db.commit()
         await db.refresh(existing_user)
         return existing_user
 
-    # Create new user with unique verification code
     while True:
         code, expires_at = generate_verification_code()
         code_result = await db.execute(select(User).filter(User.verification_code == code))
@@ -43,7 +39,6 @@ async def create_user(db: AsyncSession, telegram_id: int, phone_number: str):
     return user
 
 async def verify_user(db: AsyncSession, code: str):
-    # Find user by verification code
     result = await db.execute(select(User).filter(User.verification_code == code))
     user = result.scalars().first()
     if not user:
